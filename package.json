@@ -1,0 +1,19 @@
+{
+  "name": "mongolib",
+  "version": "1.0.0",
+  "description": "MongoDB adaptor with common use case functions",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neodmy/mongolib.git"
+  },
+  "author": "David Miguel Yusta",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/neodmy/mongolib/issues"
+  },
+  "homepage": "https://github.com/neodmy/mongolib#readme"
+}
