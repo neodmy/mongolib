@@ -10,15 +10,19 @@ const createInstance = async ({ host, port }) => {
         { useNewUrlParser: true, useUnifiedTopology: true },
     );
 
-    const addDatabase = (database) => {
+    const getDatabase = (database) => databases.get(database);
+    const regDatabase = (database) => {
         if (databases.has(database)) throw Error(`${database}: database already exists`);
         databases.set(database, createDatabase({ mongoClient, database }));
     };
+    const unregDatabase = (database) => databases.delete(database) && database;
 
 
     return {
         state: { host, port, mongoUrl },
-        addDatabase,
+        getDatabase,
+        regDatabase,
+        unregDatabase,
     };
 };
 
