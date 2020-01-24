@@ -4,7 +4,8 @@
   "description": "MongoDB adaptor with common use case functions",
   "main": "src/index.js",
   "scripts": {
-    "test": "mocha __tests__"
+    "test": "mocha __tests__",
+    "start": "node src/index.js"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
     "eslint": "^6.8.0",
     "eslint-config-airbnb-base": "^14.0.0",
     "eslint-plugin-import": "^2.20.0",

@@ -1,4 +1,4 @@
-const instance = require('./instance');
+const createInstance = require('./instance');
 
 const createHost = ({ host }) => {
     const aliases = [];
@@ -6,10 +6,11 @@ const createHost = ({ host }) => {
 
     const addAlias = (alias) => { aliases.push(alias); };
     const removeAlias = (alias) => { aliases.splice(aliases.findIndex((al) => al === alias), 1); };
-    const addInstance = (port) => {
+    const addInstance = async (port) => {
         if (!Number(port)) throw Error('port is not a number');
-        if (instances.has(port)) throw Error('instance duplicated');
-        instances.set(port, instance({ host, port }));
+        if (instances.has(port)) throw Error(`${port}: instance already exists`);
+        const ins = await createInstance({ host, port });
+        instances.set(port, ins);
     };
     const removeInstance = (port) => instances.delete(port) && port;
     const getInstance = (port) => instances.get(port);

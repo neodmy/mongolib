@@ -1,4 +1,8 @@
-const { expect, assert } = require('chai');
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+
+chai.use(chaiAsPromised);
+const { expect } = chai;
 
 const host = require('../src/host');
 const instance = require('../src/instance');
@@ -32,30 +36,15 @@ describe('Host tests', () => {
     });
 
     describe('#addInstance', () => {
-        it('should not add instance: port not a number', () => {
-            expect(() => hostTest.addInstance('notvalid')).to.throw('port is not a number');
+        it('should not add instance: port not a number', () => expect(hostTest.addInstance('notvalid')).to.be.rejectedWith('port is not a number'));
+        it('should not add instance: instance already exists', async () => {
+            await hostTest.addInstance(27017);
+            expect(hostTest.addInstance(27017)).to.be.rejectedWith('27017: instance already exists');
         });
-        it('should not add instance: duplicated', () => {
-            hostTest.addInstance(27017);
-            expect(() => hostTest.addInstance(27017)).throw('instance duplicated');
-        });
-        it('should add instance', () => {
-            hostTest.addInstance(27017);
-            const ins = instance({ host: 'localhost', port: 27017 });
-            expect(hostTest.state).to.have.property('instances').eql(new Map().set(27017, ins));
-        });
-    });
-
-    describe('#removeInstance', () => {
-        it('should not remove: no instances', () => {
-            assert.isFalse(hostTest.removeInstance());
-        });
-        it('should remove instance', () => {
-            hostTest.addInstance(27017);
-            hostTest.addInstance(27018);
-            const ins = instance({ host: 'localhost', port: 27018 });
-            assert.equal(hostTest.removeInstance(27017), 27017);
-            expect(hostTest.state.instances).to.be.eql(new Map().set(27018, ins));
+        it('should add instance', async () => {
+            await hostTest.addInstance(27017);
+            const instanceTest = hostTest.state.instances.get(27017);
+            expect(instanceTest).to.deep.include({ state: { host: 'localhost', port: 27017, mongoUrl: 'mongodb://localhost:27017' } });
         });
     });
 
@@ -63,9 +52,23 @@ describe('Host tests', () => {
         it('should not get instance: empty', () => {
             expect(hostTest.getInstance(27017)).to.be.undefined;
         });
-        it('should get instance', () => {
-            hostTest.addInstance(27017);
-            expect(hostTest.getInstance(27017)).to.eql(instance({ host: 'localhost', port: 27017 }));
+        it('should get instance', async () => {
+            await hostTest.addInstance(27017);
+            expect(hostTest.getInstance(27017)).to.deep.include({ state: { host: 'localhost', port: 27017, mongoUrl: 'mongodb://localhost:27017' } });
+        });
+    });
+
+    describe('#removeInstance', () => {
+        it('should not remove: no instances', () => {
+            expect(hostTest.removeInstance()).to.be.false;
+        });
+        it('should remove instance', async () => {
+            await hostTest.addInstance(27017);
+            await hostTest.addInstance(27018);
+            expect(hostTest.removeInstance(27017)).equal(27017);
+            expect(hostTest.state.instances.size).equal(1);
+            const instanceTest = hostTest.state.instances.get(27018);
+            expect(instanceTest).to.deep.include({ state: { host: 'localhost', port: 27018, mongoUrl: 'mongodb://localhost:27018' } });
         });
     });
 });
