@@ -10,19 +10,34 @@ const createInstance = async ({ host, port }) => {
         { useNewUrlParser: true, useUnifiedTopology: true },
     );
 
-    const getDatabase = (database) => databases.get(database);
+    const getRegDatabase = (database) => databases.get(database);
     const regDatabase = (database) => {
         if (databases.has(database)) throw Error(`${database}: database already exists`);
         databases.set(database, createDatabase({ mongoClient, database }));
     };
     const unregDatabase = (database) => databases.delete(database) && database;
+    const listRegDatabases = () => Array.from(databases.keys());
+    const listInstanceDatabases = async () => {
+        const dblist = await mongoClient.db().admin().listDatabases();
+        return dblist.databases;
+    };
+    const shutdownInstance = () => {
+        try {
+            mongoClient.close();
+        } catch (err) { }
+    };
 
 
     return {
-        state: { host, port, mongoUrl },
-        getDatabase,
+        state: {
+            host, port, mongoUrl, databases, mongoClient,
+        },
+        getRegDatabase,
         regDatabase,
         unregDatabase,
+        listRegDatabases,
+        listInstanceDatabases,
+        shutdownInstance,
     };
 };
 

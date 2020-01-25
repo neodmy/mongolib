@@ -14,7 +14,16 @@ const createHost = ({ host }) => {
         const ins = await createInstance({ host, port });
         instances.set(port, ins);
     };
-    const unregInstance = (port) => instances.delete(port) && port;
+    const unregInstance = (port) => {
+        const instance = instances.get(port);
+        if (instance) {
+            instance.shutdownInstance();
+            instances.delete(port);
+            return port;
+        }
+        return !!instance;
+    };
+    const listRegInstances = () => Array.from(instances.keys());
 
     return {
         state: { host, aliases, instances },
@@ -23,6 +32,7 @@ const createHost = ({ host }) => {
         getInstance,
         regInstance,
         unregInstance,
+        listRegInstances,
     };
 };
 
