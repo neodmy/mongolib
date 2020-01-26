@@ -1,8 +1,12 @@
-const createHost = require('./host');
+const createHost = require('./components/host');
 
 const start = async () => {
-    const host = createHost({ host: 'localhost' });
-    await host.addInstance('invalid');
+
 };
 
-start().catch((err) => console.log(err));
+start()
+    .then(() => process.exit(0))
+    .catch((err) => {
+        console.log(err);
+        process.exit(1);
+    });

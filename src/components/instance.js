@@ -1,26 +1,45 @@
 const { MongoClient } = require('mongodb');
 
 const createDatabase = require('./database');
+const { validateParams } = require('../lib/utils');
 
-const createInstance = async ({ host, port }) => {
-    const mongoUrl = `mongodb://${host}:${port}`;
+const createInstance = async (
+    address,
+    {
+        port,
+        user = '',
+        password = '',
+        MongoClientOptions = { useNewUrlParser: true, useUnifiedTopology: true },
+    }) => {
+    validateParams({ port });
+
+    const instanceInfo = `Instance with port ${port}`;
+    const authCredentials = user && password ? `${user}:${password}@` : '';
+    const mongoUrl = `mongodb://${authCredentials}${address}:${port}`;
     const databases = new Map();
     const mongoClient = await MongoClient.connect(
         mongoUrl,
-        { useNewUrlParser: true, useUnifiedTopology: true },
+        MongoClientOptions,
     );
 
     const getRegDatabase = (database) => databases.get(database);
+
     const regDatabase = (database) => {
-        if (databases.has(database)) throw Error(`${database}: database already exists`);
-        databases.set(database, createDatabase({ mongoClient, database }));
+        if (databases.has(database)) throw Error(`${instanceInfo}. Database ${database} database already registered`);
+        const db = createDatabase({ mongoClient, database });
+        databases.set(database, db);
+        return db;
     };
+
     const unregDatabase = (database) => databases.delete(database) && database;
+
     const listRegDatabases = () => Array.from(databases.keys());
+
     const listInstanceDatabases = async () => {
         const dblist = await mongoClient.db().admin().listDatabases();
         return dblist.databases;
     };
+
     const shutdownInstance = () => {
         try {
             mongoClient.close();
@@ -30,7 +49,7 @@ const createInstance = async ({ host, port }) => {
 
     return {
         state: {
-            host, port, mongoUrl, databases, mongoClient,
+            address, port, user, password, databases,
         },
         getRegDatabase,
         regDatabase,

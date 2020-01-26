@@ -7,7 +7,7 @@ const { expect } = chai;
 const createInstance = require('../src/instance');
 const createDatabase = require('../src/database');
 
-describe('Instance tests', () => {
+describe.skip('Instance tests', () => {
     describe.skip('#instance', () => {
         it('should create instance', () => {
             expect(createInstance({ host: 'localhost', port: 27017 }))
