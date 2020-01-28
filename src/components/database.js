@@ -19,7 +19,8 @@ const createDatabase = ({ mongoClient, database }) => {
 
     const unregCollection = (collection) => collections.delete(collection) && collection;
 
-    const listRegCollections = () => Array.from(collections.keys());
+    const listRegCollections = () => Array.from(collections.values())
+        .map((collection) => ({ name: collection.state.collection }));
 
     const listDatabaseCollections = async () => {
         const colls = await db.listCollections().toArray();
@@ -27,7 +28,7 @@ const createDatabase = ({ mongoClient, database }) => {
     };
 
     return {
-        status: { database, collections },
+        state: { database, collections },
         getCollection,
         regCollection,
         unregCollection,

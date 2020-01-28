@@ -1,8 +1,8 @@
 const createInstance = require('./instance');
 const { validateParams } = require('../lib/utils');
 
-const createHost = ({ name, address }) => {
-    validateParams({ name, address });
+const createHost = ({ name = 'host', address }) => {
+    validateParams({ address });
 
     const instances = new Map();
     const hostInfo = `Host name: ${name} address: ${address}`;
@@ -26,12 +26,18 @@ const createHost = ({ name, address }) => {
         if (instance) {
             instance.shutdownInstance();
             instances.delete(port);
-            return port;
+            return true;
         }
         return !!instance;
     };
 
-    const listRegInstances = () => Array.from(instances.keys());
+    const listRegInstances = () => {
+        const result = [];
+        instances.forEach((value, key) => {
+            result.push({ name: key, databases: value.listRegDatabases() });
+        });
+        return { instances: result };
+    };
 
     return {
         state: {

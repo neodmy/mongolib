@@ -33,7 +33,13 @@ const createInstance = async (
 
     const unregDatabase = (database) => databases.delete(database) && database;
 
-    const listRegDatabases = () => Array.from(databases.keys());
+    const listRegDatabases = () => {
+        const result = [];
+        databases.forEach((value, key) => {
+            result.push({ name: key, collections: value.listRegCollections() });
+        });
+        return result;
+    };
 
     const listInstanceDatabases = async () => {
         const dblist = await mongoClient.db().admin().listDatabases();
@@ -49,7 +55,7 @@ const createInstance = async (
 
     return {
         state: {
-            address, port, user, password, databases,
+            port, user, password, databases,
         },
         getRegDatabase,
         regDatabase,
