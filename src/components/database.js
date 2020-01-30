@@ -1,11 +1,23 @@
+const { MongoClient } = require('mongodb');
+
 const createCollection = require('./collection');
 const { validateParams } = require('../lib/utils');
 
-const createDatabase = ({ mongoClient, database }) => {
-    validateParams({ database });
+const createDatabase = async (
+    { address, port },
+    {
+        database, user = '', password = '', mongoClientOptions = { useNewUrlParser: true, useUnifiedTopology: true },
+    }) => {
+    validateParams({ address, port, database });
 
-    const databaseInfo = `Database ${database}`;
+    const authCredentials = user && password ? `${user}:${password}@` : '';
+    const mongoUrl = `mongodb://${authCredentials}${address}:${port}`;
+    const mongoClient = await MongoClient.connect(
+        mongoUrl,
+        mongoClientOptions,
+    );
     const db = mongoClient.db(database);
+    const databaseInfo = `Database ${database}`;
     const collections = new Map();
 
     const getCollection = (collection) => collections.get(collection);
@@ -27,13 +39,27 @@ const createDatabase = ({ mongoClient, database }) => {
         return colls;
     };
 
+    const listInstanceDatabases = async () => {
+        const dblist = await mongoClient.db().admin().listDatabases();
+        return dblist.databases;
+    };
+
+    const shutdownDatabase = () => {
+        mongoClient.close().then().catch();
+    };
+
     return {
-        state: { database, collections },
+        name: database,
+        user,
+        password,
+        collections,
         getCollection,
         regCollection,
         unregCollection,
         listRegCollections,
         listDatabaseCollections,
+        listInstanceDatabases,
+        shutdownDatabase,
     };
 };
 

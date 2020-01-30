@@ -8,77 +8,96 @@ const createInstance = require('../src/components/instance');
 const createDatabase = require('../src/components/database');
 
 describe('Instance tests', () => {
+    let instance;
+    const database = 'testdb';
+    const address = 'localhost';
+    const port = 27017;
+    const user = '';
+    const password = '';
+    const instanceInfo = `Instance with port ${port}`;
+
     describe.skip('#instance', () => {
         it('should create instance', () => {
-            expect(createInstance({ host: 'localhost', port: 27017 }))
-                .to.eventually.deep.include(
-                    {
-                        state:
-                            { host: 'localhost', port: 27017, mongoUrl: 'mongodb://localhost:27017' },
-                    },
-                );
+            expect(createInstance({ address, port }))
+                .to.deep.include({ port, databases: [] });
         });
-    });
-    let instance;
-    const databaseName = 'testdb';
-    beforeEach(async () => {
-        instance = await createInstance('localhost', { port: 27017 });
-    });
-
-    describe.skip('#regDatabase', () => {
-        it('should register database', () => {
-            instance.regDatabase(databaseName);
-            const db = createDatabase({ mongoClient: instance.state.mongoClient, database: databaseName });
-            expect(instance.state).to.have.property('databases').to.be.a('Map').with.property('size').equal(1);
-            expect(instance.state.databases.get(databaseName)).to.deep.include(db);
-        });
-        it('should not regist database: database already exists', () => {
-            instance.regDatabase(databaseName);
-            expect(() => instance.regDatabase(databaseName)).to.throw('database already exists');
+        it('should not create instance: no port', () => {
+            expect(() => createInstance({ address })).to.throw('Missing arguments: port');
         });
     });
 
-    describe.skip('#getRegDatabase', () => {
+    beforeEach(() => {
+        instance = createInstance({ address, port });
+    });
+
+    describe('#regDatabase', () => {
+        it('should register database with default MongoClientOptions', async () => {
+            const db = await instance.regDatabase(database, user, password);
+            expect(db).to.deep.includes({
+                name: database, user, password, collections: new Map(),
+            });
+            expect(instance.databases).to.deep.include.members([db]);
+        });
+        it('should not regist database: database already exists', async () => {
+            await instance.regDatabase(database, user, password);
+            expect(instance.regDatabase(database, user, password))
+                .to.be.rejectedWith(`${instanceInfo}. Database with name ${database} and same user, password already registered`);
+        });
+    });
+
+    describe('#getRegDatabase', () => {
         it('should get no database: no databases', () => {
-            expect(instance.getRegDatabase('test')).to.be.undefined;
+            expect(instance.getRegDatabase(database, user, password)).to.be.undefined;
         });
-        it('should get database', () => {
-            instance.regDatabase('test');
-            const db = createDatabase({ mongoClient: instance.state.mongoClient, database: 'test' });
-            expect(instance.getRegDatabase('test')).eqls(db);
+        it('should get database', async () => {
+            await instance.regDatabase(database, user, password);
+            const db = instance.getRegDatabase(database, user, password);
+            expect(db).to.deep.include({
+                name: database, user, password, collections: new Map(),
+            });
         });
     });
 
-    describe.skip('#unregDatabase', () => {
-        it('should unregist database', () => {
-            instance.regDatabase(databaseName);
-            expect(instance.unregDatabase(databaseName)).to.be.equal(databaseName);
-            expect(instance.state).to.have.property('databases').to.be.a('Map').with.property('size').equal(0);
+    describe('#unregDatabase', () => {
+        it('should unregist database', async () => {
+            await instance.regDatabase(database, user, password);
+            expect(instance.databases).to.have.property('length').equal(1);
+            expect(instance.unregDatabase(database, user, password)).to.be.true;
+            expect(instance.databases).to.have.property('length').equal(0);
         });
         it('should not unregist database: no databases', () => {
-            expect(instance.unregDatabase(databaseName)).to.be.false;
+            expect(instance.unregDatabase(database, user, password)).to.be.false;
         });
     });
 
-    describe.skip('#listRegDatabases', () => {
-        it('should list 2 databases', () => {
-            instance.regDatabase(databaseName);
-            instance.regDatabase(`${databaseName}2`);
-            console.log(instance.listRegDatabases());
+    describe('#listRegDatabases', () => {
+        it('should list 2 databases', async () => {
+            await instance.regDatabase(database);
+            await instance.regDatabase(`${database}2`);
             expect(instance.listRegDatabases()).to.be.an('Array').with.property('length').equal(2);
             expect(instance.listRegDatabases()).to.deep.include.members([
-                { name: databaseName, collections: [] },
-                { name: `${databaseName}2`, collections: [] }]);
+                {
+                    name: database, user, password, collections: [],
+                },
+                {
+                    name: `${database}2`, user, password, collections: [],
+                }]);
         });
         it('should list 0 databases', () => {
-            expect(instance.listRegDatabases()).with.property('length').eq(0);
+            expect(instance.listRegDatabases()).to.be.an('Array').with.property('length').eq(0);
         });
     });
 
-    describe.skip('#listInstanceDatabases', () => {
-        it('should list databases', async () => {
-            const databases = await instance.listInstanceDatabases();
-            expect(databases).to.be.an('array');
+    describe('#shutdownInstance', () => {
+        it('should shutdown instance with 2 databases', async () => {
+            await instance.regDatabase(database);
+            await instance.regDatabase(`${database}2`);
+            instance.shutdownInstance();
+            expect(instance.databases).to.be.an('array').with.property('length').equal(0);
+        });
+        it('should shutdown instance with no databases', async () => {
+            instance.shutdownInstance();
+            expect(instance.databases).to.be.an('array').with.property('length').equal(0);
         });
     });
 });

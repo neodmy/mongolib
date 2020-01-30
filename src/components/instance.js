@@ -1,67 +1,65 @@
-const { MongoClient } = require('mongodb');
-
 const createDatabase = require('./database');
 const { validateParams } = require('../lib/utils');
 
-const createInstance = async (
-    address,
-    {
-        port,
-        user = '',
-        password = '',
-        MongoClientOptions = { useNewUrlParser: true, useUnifiedTopology: true },
-    }) => {
-    validateParams({ port });
+const createInstance = ({ address, port }) => {
+    validateParams({ address, port });
 
     const instanceInfo = `Instance with port ${port}`;
-    const authCredentials = user && password ? `${user}:${password}@` : '';
-    const mongoUrl = `mongodb://${authCredentials}${address}:${port}`;
-    const databases = new Map();
-    const mongoClient = await MongoClient.connect(
-        mongoUrl,
-        MongoClientOptions,
+
+    const databases = [];
+
+    const getRegDatabase = (database, user = '', password = '') => databases.find(
+        (el) => el.name === database && el.user === user && el.password === password,
     );
 
-    const getRegDatabase = (database) => databases.get(database);
+    const getRegDatabaseIndex = (database, user = '', password = '') => databases.findIndex(
+        (el) => el.name === database && el.user === user && el.password === password,
+    );
 
-    const regDatabase = (database) => {
-        if (databases.has(database)) throw Error(`${instanceInfo}. Database ${database} database already registered`);
-        const db = createDatabase({ mongoClient, database });
-        databases.set(database, db);
+    const regDatabase = async (database, user = '', password = '', mongoClientOptions) => {
+        if (getRegDatabase(database, user, password)) { throw Error(`${instanceInfo}. Database with name ${database} and same user, password already registered`); }
+        const db = await createDatabase({ address, port }, {
+            database, user, password, mongoClientOptions,
+        });
+        databases.push({
+            ...db,
+        });
         return db;
     };
 
-    const unregDatabase = (database) => databases.delete(database) && database;
-
-    const listRegDatabases = () => {
-        const result = [];
-        databases.forEach((value, key) => {
-            result.push({ name: key, collections: value.listRegCollections() });
-        });
-        return result;
+    const unregDatabase = (database, user = '', password = '') => {
+        const dbIndex = getRegDatabaseIndex(database, user, password);
+        if (dbIndex !== -1) {
+            const db = databases[dbIndex];
+            db.shutdownDatabase();
+            databases.splice(dbIndex, 1);
+            return true;
+        }
+        return false;
     };
 
-    const listInstanceDatabases = async () => {
-        const dblist = await mongoClient.db().admin().listDatabases();
-        return dblist.databases;
-    };
+    const listRegDatabases = () => databases.map((el) => ({
+        name: el.name,
+        user: el.user,
+        password: el.password,
+        collections: el.listRegCollections(),
+    }));
+
 
     const shutdownInstance = () => {
-        try {
-            mongoClient.close();
-        } catch (err) { }
+        databases.forEach((el) => {
+            el.shutdownDatabase();
+        });
+        databases.splice(0, databases.length);
     };
 
-
     return {
-        state: {
-            port, user, password, databases,
-        },
+        port,
+        databases,
         getRegDatabase,
         regDatabase,
         unregDatabase,
         listRegDatabases,
-        listInstanceDatabases,
         shutdownInstance,
     };
 };

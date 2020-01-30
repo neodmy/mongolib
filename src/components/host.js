@@ -9,14 +9,10 @@ const createHost = ({ name = 'host', address }) => {
 
     const getInstance = (port) => instances.get(port);
 
-    const regInstance = async ({
-        port, user, password, MongoClientOptions,
-    }) => {
-        if (port && !Number(port)) throw Error(`${hostInfo}. Cannot convert port: ${port} to number`);
+    const regInstance = (port) => {
+        if (!Number(port)) throw Error(`${hostInfo}. Cannot convert argument '${port}' to number`);
         if (instances.has(port)) throw Error(`${hostInfo}. Instance with port ${port} already registered`);
-        const ins = await createInstance(address, {
-            port, user, password, MongoClientOptions,
-        });
+        const ins = createInstance({ address, port });
         instances.set(port, ins);
         return ins;
     };
@@ -34,19 +30,30 @@ const createHost = ({ name = 'host', address }) => {
     const listRegInstances = () => {
         const result = [];
         instances.forEach((value, key) => {
-            result.push({ name: key, databases: value.listRegDatabases() });
+            result.push({ port: key, databases: value.listRegDatabases() });
         });
-        return { instances: result };
+        return result;
+    };
+
+    const getHostInfo = () => ({ name, address, instances: listRegInstances() });
+
+    const shutdownHost = () => {
+        instances.forEach((el) => {
+            el.shutdownInstance();
+        });
+        instances.clear();
     };
 
     return {
-        state: {
-            name, address, instances,
-        },
+        name,
+        address,
+        instances,
         getInstance,
         regInstance,
         unregInstance,
         listRegInstances,
+        getHostInfo,
+        shutdownHost,
     };
 };
 
