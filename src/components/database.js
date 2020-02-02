@@ -29,10 +29,10 @@ const createDatabase = async (
         return col;
     };
 
-    const unregCollection = (collection) => collections.delete(collection) && collection;
+    const unregCollection = (collection) => !!collections.delete(collection) && true;
 
     const listRegCollections = () => Array.from(collections.values())
-        .map((collection) => ({ name: collection.state.collection }));
+        .map((col) => col.collection);
 
     const listDatabaseCollections = async () => {
         const colls = await db.listCollections().toArray();
@@ -44,9 +44,10 @@ const createDatabase = async (
         return dblist.databases;
     };
 
-    const shutdownDatabase = () => {
-        mongoClient.close().then().catch();
-    };
+    const shutdownDatabase = async () => mongoClient.close()
+        .then(() => true)
+        .catch(() => false)
+        .finally(() => { collections.clear(); });
 
     return {
         name: database,

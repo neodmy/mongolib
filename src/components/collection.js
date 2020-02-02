@@ -9,7 +9,7 @@ const createCollection = ({ database, collection }) => {
     const Store = store(col);
 
     return {
-        state: { collection },
+        collection,
         ...Store,
     };
 };

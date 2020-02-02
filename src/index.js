@@ -1,39 +1,32 @@
 const createHost = require('./components/host');
 
 module.exports = () => {
-    const initInstance = async (
+    const initInstance = (
         { name, address },
-        {
-            port, user, password, MongoClientOptions,
-        }) => {
-        const instance = await createHost({ name, address }).regInstance({
-            port, user, password, MongoClientOptions,
-        });
-        return instance;
-    };
+        { port },
+    ) => createHost({ name, address }).regInstance(port);
 
     const initDatabase = async (
         { name, address },
+        { port },
         {
-            port, user, password, MongoClientOptions,
+            database, user, password, mongoClientOptions,
         },
-        database) => {
-        const instance = await initInstance({ name, address }, {
-            port, user, password, MongoClientOptions,
-        });
-        return instance.regDatabase(database);
+    ) => {
+        const instance = initInstance({ name, address }, { port });
+        return instance.regDatabase(database, user, password, mongoClientOptions);
     };
 
     const initCollection = async (
         { name, address },
+        { port },
         {
-            port, user, password, MongoClientOptions,
+            database, user, password, mongoClientOptions,
         },
-        database,
-        collection) => {
-        const db = await initDatabase({ name, address }, {
-            port, user, password, MongoClientOptions,
-        }, database);
+        { collection }) => {
+        const db = await initDatabase({ name, address }, { port }, {
+            database, user, password, mongoClientOptions,
+        });
         return db.regCollection(collection);
     };
 

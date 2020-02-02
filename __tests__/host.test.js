@@ -6,7 +6,7 @@ const { expect } = chai;
 
 const createHost = require('../src/components/host');
 
-describe('Host tests', () => {
+describe.skip('Host tests', () => {
     let host;
     const name = 'host';
     const address = 'localhost';

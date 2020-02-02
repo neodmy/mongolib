@@ -1,7 +1,7 @@
 const { ObjectId } = require('mongodb');
 
 const Update = (collection) => {
-    const updateOneAddingById = async (id, doc) => {
+    const updateOneById = async (id, doc) => {
         const { value } = await collection.findOneAndUpdate(
             { _id: new ObjectId(id) },
             { $set: doc },
@@ -10,28 +10,28 @@ const Update = (collection) => {
         return value;
     };
 
-    const updateOneReplacingById = async (id, doc) => {
+    const findOneAndUpdate = async (filter, update, options = { returnOriginal: false }) => {
         const { value } = await collection.findOneAndUpdate(
-            { _id: new ObjectId(id) },
-            { $replaceWith: doc },
-            { returnOriginal: false },
+            filter,
+            update,
+            options,
         );
         return value;
     };
 
-    const updateOne = async (filter, update, options) => {
-        const { value } = await collection.updateOne(filter, update, options);
-        return value;
+    const updateOne = async (filter, update, options = { returnOriginal: false }) => {
+        const { result: { nModified } } = await collection.updateOne(filter, update, options);
+        return nModified;
     };
 
-    const updateMany = async (filter, update, options) => {
-        const { value } = await collection.updateMany(filter, update, options);
-        return value;
+    const updateMany = async (filter, update, options = { returnOriginal: false }) => {
+        const { result: { nModified } } = await collection.updateMany(filter, update, options);
+        return nModified;
     };
 
     return {
-        updateOneAddingById,
-        updateOneReplacingById,
+        updateOneById,
+        findOneAndUpdate,
         updateOne,
         updateMany,
     };
